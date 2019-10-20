@@ -18,11 +18,12 @@ maintainer:          johb.maier@gmail.com
 extra-source-files:  CHANGELOG.md
 
 library
-  exposed-modules:     Timeclock, Parse
+  exposed-modules:     Time, Timeclock, Parse
   -- other-modules:
   default-extensions:  OverloadedStrings
   build-depends:       base ^>=4.12.0.0
                      , relude
+                     , time
   hs-source-dirs:      src-lib
   default-language:    Haskell2010
   mixins:              base hiding (Prelude)
