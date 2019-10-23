@@ -1,27 +1,43 @@
 module Timeclock where
 
-import qualified Data.Time.Calendar as Calendar
-import           Time               (Time, mkTime)
-
-data DateTime =
-  DateTime
-  { date :: Calendar.Day
-  , time :: Time
-  }
-
-mkDateTime
-  :: Integer
-  -> Int
-  -> Int
-  -> Int
-  -> Int
-  -> Int
-  -> Maybe DateTime
-mkDateTime y m d h mi s = do
-  time <- mkTime h mi s
-  day <- Calendar.fromGregorianValid y m d
-  return $ DateTime day time
+import           Control.Applicative (many, optional, some, (<|>))
+import           Data.Time.Clock     (UTCTime)
+import           Parse               (Parser)
+import qualified Parse
 
 data Entry
-  = ClockIn DateTime String
-  | ClockOut DateTime (Maybe String)
+  = ClockIn UTCTime String
+  | ClockOut UTCTime (Maybe String)
+  deriving Show
+
+type Timelog =
+  [Entry]
+
+timelog :: Parser Timelog
+timelog =
+  many entry
+
+entry :: Parser Entry
+entry =
+  clockIn <|> clockOut
+
+clockOut :: Parser Entry
+clockOut = do
+  _ <- Parse.char 'o'
+  _ <- Parse.space
+  time <- Parse.utcTime
+  desc <- optional (Parse.string " " <> Parse.untilBefore (== '\n')) <* Parse.char '\n'
+  return $ ClockOut time desc
+
+clockIn :: Parser Entry
+clockIn = do
+  _ <- Parse.char 'i'
+  _ <- Parse.space
+  time <- Parse.utcTime
+  _ <- Parse.space
+  desc <- Parse.untilBefore (== '\n') <* Parse.char '\n'
+  return $ ClockIn time desc
+
+readTimelog :: FilePath -> IO Timelog
+readTimelog path =
+  Parse.parse timelog <$> readFile path
